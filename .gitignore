@@ -39,6 +39,7 @@ coverage.*
 *.cover
 .tox/
 .nox/
+.env
 
 # Jupyter Notebooks checkpoints
 .ipynb_checkpoints/

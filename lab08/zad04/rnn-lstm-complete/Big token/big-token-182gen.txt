@@ -1,0 +1,6 @@
+Seed:
+" a very curious sensation , which puzzled her a good deal until she made out what it was : she was beginning to grow larger again , and she thought at first she would get up and leave the court ; but on second thoughts she decided to remain where she was as long as there was room for her . “ i wish you wouldn ’ t squeeze so .” said the dormouse , who was sitting next to her . “ i can hardly breathe .” “ i can ’ t help it ,” said alice very meekly "
+Generated text:
+I0000 00:00:1745087005.749439  146753 cuda_dnn.cc:529] Loaded cuDNN version 90300
+, “ you ’ s be the the nonsense ,” said the hatter . “ a anxious ’ t ’ s year to , “ you ’ you ’ have them , i the cat . “ i , the ’ s ,” said the march hare . “ alice , “ you ’ s a said the the ,” “ the the , “ they the ’ on a “ i ’ ’ usual them a “ the , “ alice . “ you s , said the gryphon hare . “ they , all the dodo , at
+Done.
