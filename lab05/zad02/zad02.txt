@@ -1,0 +1,77 @@
+
+a) reshape:
+Zmienia kształt danych wejściowych, aby były zgodne z wymaganiami sieci neuronowej.
+Dodaje wymiar kanału dla obrazów w skali szarości.
+
+to_categorical:
+Zamienia etykiety klas na format one-hot encoding.
+
+np.argmax:
+Zamienia one-hot encoded etykiety z powrotem na ich oryginalne wartości (indeksy klas).
+
+b)
+
+1. Wejście do sieci
+Rozmiar wejścia: (28, 28, 1) (obrazy w skali szarości o wymiarach 28x28 pikseli z 1 kanałem).
+Zakres wartości: [0, 1] 
+
+2. Warstwa konwolucyjna (Conv2D)
+Wejście: Obraz o wymiarach (28, 28, 1).
+Operacja:
+Nakładanie 32 filtrów o wymiarach (3, 3) na obraz wejściowy.
+Każdy filtr przesuwa się po obrazie, wykonując operację splotu (convolution), aby wykrywać różne cechy (np. krawędzie, tekstury).
+
+Wyjście: Tensor o wymiarach (26, 26, 32):
+(26, 26) to wynik zmniejszenia wymiarów przez filtry (3, 3) (bez paddingu).
+32 to liczba filtrów.
+
+3. Warstwa maksymalnego spoolingowania (MaxPooling2D)
+Wejście: Tensor o wymiarach (26, 26, 32).
+Operacja:
+Dla każdego filtra wybierany jest maksymalny piksel w oknie (2, 2).
+Zmniejsza to rozmiar danych, redukując wymiar przestrzenny (downsampling).
+Wyjście: Tensor o wymiarach (13, 13, 32):
+
+4. Warstwa spłaszczająca (Flatten)
+
+Wejście: Tensor o wymiarach (13, 13, 32).
+Operacja:
+Dane są spłaszczane do jednowymiarowego wektora.
+Wektor ma rozmiar 13 * 13 * 32 = 5408.
+Wyjście: Wektor o wymiarze (5408).
+5. Warstwa gęsta (Dense)
+
+Wejście: Wektor o wymiarze (5408).
+Operacja:
+Każdy z 64 neuronów jest połączony z każdym wejściem.
+Obliczane są wagi i przesunięcia (bias), a następnie stosowana jest funkcja aktywacji ReLU.
+Wyjście: Wektor o wymiarze (64).
+
+6. Warstwa wyjściowa (Dense)
+Wejście: Wektor o wymiarze (64).
+Operacja:
+Każdy z 10 neuronów reprezentuje jedną klasę (cyfry od 0 do 9)
+Funkcja aktywacji softmax przekształca wyjście w prawdopodobieństwa, które sumują się do 1.
+Wyjście: Wektor o wymiarze (10):
+Każda wartość reprezentuje prawdopodobieństwo przynależności obrazu do danej klasy.
+
+
+c) 
+4 z 9
+2 z 7
+
+d)
+1. Analiza krzywych dokładności (Accuracy):
+Dokładność treningowa (niebieska linia) rośnie i osiąga prawie 99% po 4 epokach.
+Dokładność walidacyjna (pomarańczowa linia) również rośnie, ale stabilizuje się na poziomie około 98% po 2-3 epokach.
+Różnica między dokładnością treningową a walidacyjną jest niewielka (około 1%).
+2. Analiza krzywych straty (Loss):
+Strata treningowa (niebieska linia) systematycznie maleje i osiąga bardzo niski poziom.
+Strata walidacyjna (pomarańczowa linia) również maleje, ale po 2-3 epokach zaczyna się lekko zwiększać.
+
+3. Czy mamy przeuczenie lub niedouczenie?
+Przeuczenie (overfitting):
+Objawy:
+Strata walidacyjna zaczyna rosnąć po 2-3 epokach, podczas gdy strata treningowa nadal maleje.
+Dokładność walidacyjna przestaje rosnąć, mimo że dokładność treningowa nadal się poprawia.
+Wniosek: Model zaczyna lekko przeuczać się po 3. epoce.

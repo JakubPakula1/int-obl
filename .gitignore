@@ -1,0 +1,49 @@
+# ------------------------
+# macOS system files
+# ------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon?
+._*
+
+# Thumbnails
+Thumbs.db
+
+# ------------------------
+# Python
+# ------------------------
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+pip-wheel-metadata/
+*.log
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.pytest_cache/
+coverage.*
+.cache
+.pytype/
+.mypy_cache/
+*.cover
+.tox/
+.nox/
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
+
+# ------------------------
+# Ignore local photos folder
+# ------------------------
+lab05/dogs-cats-mini/
