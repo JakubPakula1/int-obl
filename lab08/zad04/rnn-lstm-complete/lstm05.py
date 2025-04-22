@@ -4,7 +4,7 @@ import numpy as np
 from nltk.tokenize import wordpunct_tokenize
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
-from tensorflow.keras.layers import Dropout
+from tensorflow.keras.layers import Dropout,BatchNormalization
 from tensorflow.keras.layers import LSTM
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.utils import to_categorical
@@ -54,14 +54,27 @@ y = to_categorical(dataY)
 
 # new model
 # Define the new model
+# model = Sequential()
+# model.add(LSTM(512, input_shape=(X.shape[1], X.shape[2]), return_sequences=True))  # First LSTM layer
+# model.add(Dropout(0.2))
+# model.add(LSTM(256))  # Second LSTM layer
+# model.add(Dropout(0.2))
+# model.add(Dense(y.shape[1], activation='softmax'))
+
+
+
+# Define the LSTM model
 model = Sequential()
-model.add(LSTM(512, input_shape=(X.shape[1], X.shape[2]), return_sequences=True))  # First LSTM layer
-model.add(Dropout(0.2))
-model.add(LSTM(256))  # Second LSTM layer
-model.add(Dropout(0.2))
+model.add(LSTM(512, input_shape=(X.shape[1], X.shape[2]), return_sequences=True))
+model.add(BatchNormalization())
+model.add(Dropout(0.3))
+model.add(LSTM(256))
+model.add(BatchNormalization())
+model.add(Dropout(0.3))
 model.add(Dense(y.shape[1], activation='softmax'))
+
 # load the network weights
-filename = "Big token/big-token-model-18-0.7901.keras"
+filename = "Big token/big-token-model-506-0.3382.keras"
 model.load_weights(filename)
 model.compile(loss='categorical_crossentropy', optimizer='adam')
 # pick a random seed
