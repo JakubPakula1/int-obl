@@ -1,0 +1,27 @@
+1. Dzieci i kobiety miały większe szanse na przeżycie:
+
+Reguła (Age_Child, Class_2nd) -> (Survived_Yes) oraz (Age_Child, Sex_Female, Class_2nd) -> (Survived_Yes) wskazują, że wszystkie dzieci z klasy 2 (szczególnie dziewczynki) przeżyły (confidence = 1.0).
+Kobiety z klasy 1 również miały bardzo wysokie szanse na przeżycie, np. (Sex_Female, Class_1st) -> (Survived_Yes) z ufnością 0.972 i lift 3.01.
+
+2. Mężczyźni z niższych klas mieli większe szanse na brak przeżycia:
+
+Reguła (Sex_Male, Age_Adult, Class_3rd) -> (Survived_No) wskazuje, że 83.7% dorosłych mężczyzn z klasy 3 nie przeżyło (confidence = 0.837).
+Podobnie, mężczyźni z klasy 2 mieli wysokie prawdopodobieństwo braku przeżycia, np. (Sex_Male, Age_Adult, Class_2nd) -> (Survived_No) z ufnością 0.916.
+
+3. Klasa pasażera miała znaczenie:
+
+Pasażerowie z klasy 1 (szczególnie kobiety) mieli większe szanse na przeżycie, np. (Sex_Female, Class_1st) -> (Survived_Yes) z lift 3.01.
+Pasażerowie z klasy 3, szczególnie mężczyźni, mieli większe szanse na brak przeżycia, np. (Sex_Male, Class_3rd) -> (Survived_No) z lift 1.22.
+
+4. Załoga (Crew):
+
+Kobiety z załogi miały stosunkowo wysokie szanse na przeżycie, np. (Class_Crew, Sex_Female) -> (Survived_Yes) z ufnością 0.869.
+
+Lift jako miara istotności:
+
+Reguły z wysokim lift (np. 3.249 dla (Sex_Female, Class_1st) -> (Survived_Yes, Age_Adult)) wskazują, że te zależności są znacznie bardziej istotne niż przypadkowe wystąpienie.
+
+Podsumowanie:
+Kobiety i dzieci były ratowane w pierwszej kolejności.
+Klasa pasażera miała duży wpływ na przeżywalność – pasażerowie z wyższych klas mieli większe szanse na przeżycie.
+Mężczyźni z niższych klas byli w najgorszej sytuacji, z wysokim prawdopodobieństwem braku przeżycia.
