@@ -1,14 +1,20 @@
 Seed:
-" same as they used to do :— “ how doth the little crocodile improve his shining tail ,
-and pour the waters of the nile on every golden scale ! “ how cheerfully he seems to grin ,
-how neatly spread his claws , and welcome little fishes in with gently smiling jaws !” “ i ’ m
-sure those are not the right words ,” said poor alice , and her eyes filled with tears again as
-she went on , “ i must be mabel after all , and i shall have to go and live in that "
+"Same as they used to do:—
+'How doth the little crocodile improve his shining tail,
+and pour the waters of the Nile on every golden scale!
+How cheerfully he seems to grin,
+how neatly spread his claws,
+and welcome little fishes in with gently smiling jaws!'
+
+'I’m sure those are not the right words,' said poor Alice, and her eyes filled with tears again as she went on,
+'I must be Mabel after all, and I shall have to go and live in that...'"
+
 Generated text:
-poky little house , and have next to little toys to play with , and oh !
-ever , she being up little her the itself : she a very of its the was . “
-but it do ’ t matter a bit ,” she said to herself . “ the a that , and sir ! with the ,
-, you to might ?” said the queen said , “ behead if did ! said the hatter . “ and i ’ s not used to it ,
-” pleaded the to , “ and i mentioned ’ t
-Done.
+
+"...poky little house, and have next to little toys to play with, and oh!
+Ever, she being up little her the itself: she a very of its the was.
+'But it don’t matter a bit,' she said to herself.
+'The a that, and sir! With the, you to might?' said the Queen.
+'Behead if did!' said the Hatter.
+'And I’m not used to it,' pleaded the to, 'and I mentioned...'"
 

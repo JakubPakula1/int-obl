@@ -31,3 +31,6 @@ plt.title("Historia kosztów podczas optymalizacji")
 plt.xlabel("Iteracje")
 plt.ylabel("Koszt")
 # plt.show()
+
+#? Wysokie c1 i niskie c2 powodują, że cząstki poruszają się szybko w kierunku najlepszego rozwiązania, ale mogą nie eksplorować przestrzeni wystarczająco dobrze.
+#? Niskie c1 i wysokie c2 powodują, że cząstki eksplorują przestrzeń bardziej, ale mogą nie koncentrować się na najlepszym rozwiązaniu.

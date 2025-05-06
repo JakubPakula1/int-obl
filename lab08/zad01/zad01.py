@@ -9,7 +9,9 @@ import string
 # Remove punctuation from the text
 
 nltk.download('wordnet')
+nltk.download('punkt_tab')
 nltk.download('omw-1.4')
+nltk.download('stopwords')
 # Wczytanie tekstu
 with open("artykul.txt", "r", encoding="utf-8") as fs:
     text = fs.read()
@@ -26,7 +28,7 @@ filtered_tokens = [word for word in tokens if word.lower() not in stop_words]
 print(len(filtered_tokens))
 # 1315
 # Ręczne dodanie dodatkowych słów do stop-words
-additional_stopwords = ["could", "would", "also", "however", "may", "might", "one", "two"]
+additional_stopwords = ["could", "would", "also", "however", "may", "might", "de"]
 stop_words.update(additional_stopwords)
 
 # Ponowne filtrowanie

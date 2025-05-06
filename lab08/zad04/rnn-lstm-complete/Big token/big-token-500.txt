@@ -1,6 +1,16 @@
 Seed:
-" the caterpillar decidedly , and there was silence for some minutes . the caterpillar was the first to speak . “ what size do you want to be ?” it asked . “ oh , i ’ m not particular as to size ,” alice hastily replied ; “ only one doesn ’ t like changing so often , you know .” “ i _don ’ t_ know ,” said the caterpillar . alice said nothing : she had never been so much contradicted in her life before , and she felt that she was losing her temper . “ "
+
+"The caterpillar decidedly, and there was silence for some minutes. The caterpillar was the first to speak.
+“What size do you want to be?” it asked.
+“Oh, I’m not particular as to size,” Alice hastily replied; “only one doesn’t like changing so often, you know.”
+“I don’t know,” said the caterpillar.
+Alice said nothing: she had never been so much contradicted in her life before, and she felt that she was losing her temper."
+
 Generated text:
-I0000 00:00:1745340567.294473   57158 cuda_dnn.cc:529] Loaded cuDNN version 90300
-are you content now ?” said the caterpillar . “ well , i should like to be a _little_ larger , sir , if you wouldn ’ t mind ,” said alice : “ three inches is such a wretched height to be .” “ it is a very good height indeed !” said the caterpillar angrily , rearing itself upright as it spoke ( it was exactly three inches high ). “ but i ’ m not used to it !” pleaded poor alice in a piteous tone . and she thought of herself , “ i wish the
-Done.
+
+“Are you content now?” said the caterpillar.
+“Well, I should like to be a little larger, sir, if you wouldn’t mind,” said Alice.
+“Three inches is such a wretched height to be.”
+“It is a very good height indeed!” said the caterpillar angrily, rearing itself upright as it spoke (it was exactly three inches high).
+“But I’m not used to it!” pleaded poor Alice in a piteous tone.
+And she thought to herself, “I wish the…”
