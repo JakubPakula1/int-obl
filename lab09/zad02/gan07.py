@@ -29,7 +29,7 @@ def define_discriminator(in_shape=(28,28,1)):
 	model.add(Flatten())
 	model.add(Dense(1, activation='sigmoid'))
 	# compile model
-	opt = Adam(lr=0.0002, beta_1=0.5)
+	opt = Adam(learning_rate=0.0002, beta_1=0.5)
 	model.compile(loss='binary_crossentropy', optimizer=opt, metrics=['accuracy'])
 	return model
 
@@ -61,7 +61,7 @@ def define_gan(g_model, d_model):
 	# add the discriminator
 	model.add(d_model)
 	# compile model
-	opt = Adam(lr=0.0002, beta_1=0.5)
+	opt = Adam(learning_rate=0.0002, beta_1=0.5)
 	model.compile(loss='binary_crossentropy', optimizer=opt)
 	return model
 
@@ -135,7 +135,7 @@ def summarize_performance(epoch, g_model, d_model, dataset, latent_dim, n_sample
 	# save plot
 	save_plot(x_fake, epoch)
 	# save the generator model tile file
-	filename = 'generator_model_%03d.h5' % (epoch + 1)
+	filename = 'generator_model_%03d.keras' % (epoch + 1)
 	g_model.save(filename)
 
 # train the generator and discriminator
@@ -177,7 +177,7 @@ gan_model = define_gan(g_model, d_model)
 # load image data
 dataset = load_real_samples()
 #number of epochs
-n_epochs = 13
+n_epochs = 200
 #batch size
 batch_size = 256
 # train model
