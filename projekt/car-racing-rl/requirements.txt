@@ -1,0 +1,8 @@
+gymnasium
+numpy
+tensorflow
+matplotlib
+pandas
+opencv-python
+scikit-learn
+neat-python
