@@ -2,7 +2,7 @@ import gymnasium as gym
 import numpy as np
 
 # Utwórz środowisko
-env = gym.make("LunarLander-v2", render_mode="human")
+env = gym.make("LunarLander-v3", render_mode="human")
 print(f"Środowisko: {env.spec.id}")
 print(f"Przestrzeń obserwacji: {env.observation_space}")
 print(f"Przestrzeń akcji: {env.action_space}")
