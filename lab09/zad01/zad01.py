@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 file_path = '/Users/kuba/Desktop/Studia UG/semestr_4/inteligencja_obliczeniowa/lab09/zad01/titanic.csv'
 df = pd.read_csv(file_path)
 
-# Upewnienie się, że dane mają tylko wymagane kolumny
 df = df[['Class', 'Sex', 'Age', 'Survived']]
 
 # Konwersja danych na format one-hot encoding
