@@ -1,6 +1,6 @@
 import gymnasium as gym
 import time
-
+#?Stan dyskretny + Akcje dyskretne
 # Utwórz środowisko
 env = gym.make("FrozenLake-v1", render_mode="human")
 print(f"Środowisko: {env.spec.id}")

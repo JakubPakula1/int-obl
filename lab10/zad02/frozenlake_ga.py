@@ -10,11 +10,8 @@ print(f"Przestrzeń obserwacji: {env.observation_space}")
 print(f"Przestrzeń akcji: {env.action_space}")
 
 # Parametry chromosomu
-# W FrozenLake 8x8 teoretycznie minimalna ścieżka to 14 ruchów (7 w prawo + 7 w dół)
-# Ale dodajemy bufor na błędy i obejścia przeszkód
 CHROMOSOME_LENGTH = 30  # Maksymalna długość sekwencji ruchów
-POPULATION_SIZE = 200
-    # Większa populacja dla lepszej eksploracji
+POPULATION_SIZE = 200 # Większa populacja dla lepszej eksploracji
 NUM_GENERATIONS = 300    # Więcej generacji dla złożonego problemu
 
 def fitness_function(ga_instance, solution, solution_idx):

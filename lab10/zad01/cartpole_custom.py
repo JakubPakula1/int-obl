@@ -1,6 +1,6 @@
 import gymnasium as gym
 import numpy as np
-
+#?Stan ciągły + Akcje dyskretne
 # Utwórz środowisko
 env = gym.make("CartPole-v1", render_mode="human")
 print(f"Środowisko: {env.spec.id}")
@@ -21,7 +21,6 @@ def get_custom_action(observation):
     
     # If pole is falling right (positive angle), move right
     # If pole is falling left (negative angle), move left
-    # Also consider the angular velocity to make movement smoother
     if pole_angle + 0.1 * pole_velocity > 0:
         return 1  # Move right
     else:

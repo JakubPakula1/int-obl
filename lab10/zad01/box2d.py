@@ -1,5 +1,5 @@
 import gymnasium as gym
-
+#?Stan ciągły + Akcje dyskretne
 # Utwórz środowisko
 env = gym.make("LunarLander-v2", render_mode="human")
 print(f"Środowisko: {env.spec.id}")

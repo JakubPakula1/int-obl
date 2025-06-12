@@ -1,3 +1,5 @@
+import numpy as np
+import random
 class DQNAgent:
     def __init__(self, state_size, action_size, model):
         self.state_size = state_size

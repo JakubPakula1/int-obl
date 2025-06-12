@@ -27,14 +27,14 @@ def get_custom_action(observation):
     # Default action is no-op
     action = 0
     
-    # If we're too far left, move right
+    # too far left, move right
     if x_pos < -0.2:
         action = 1  # Main engine
-    # If we're too far right, move left
+    # too far right, move left
     elif x_pos > 0.2:
         action = 3  # Main engine + right
     
-    # If we're too high or falling too fast, fire main engine
+    # high or falling too fast, fire main engine
     if y_pos > 0.5 or y_vel < -0.5:
         if action == 0:  # If no horizontal correction needed
             action = 2  # Main engine
@@ -43,7 +43,7 @@ def get_custom_action(observation):
         elif action == 3:  # If moving left
             action = 2  # Main engine
     
-    # If we're tilted too much, try to correct
+    # tilted too much, try to correct
     if abs(angle) > 0.2:
         if angle > 0:  # Tilted right
             action = 1  # Move right to correct
@@ -52,13 +52,13 @@ def get_custom_action(observation):
     
     return action
 
-# Uruchom kilka epizodów
+# Uruchomienie
 for episode in range(5):
     observation, info = env.reset(seed=episode)
     total_reward = 0
     
     for step in range(1000):
-        # Użyj własnej strategii zamiast losowej akcji
+        # Własna strategia akcji
         action = get_custom_action(observation)
         
         # Wykonaj akcję
