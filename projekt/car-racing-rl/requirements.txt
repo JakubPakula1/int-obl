@@ -6,3 +6,5 @@ pandas
 opencv-python
 scikit-learn
 neat-python
+swig
+gymnasium[box2d]
