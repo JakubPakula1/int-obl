@@ -10,9 +10,9 @@ def preprocess_state(state):
     gray = cv2.cvtColor(state, cv2.COLOR_RGB2GRAY)
     resized = cv2.resize(gray, (84, 84), interpolation=cv2.INTER_AREA)  # INTER_AREA jest szybsze
     normalized = resized / 255.0
-    return normalized.reshape(1, 84, 84, 1)
+    return normalized.reshape(84, 84, 1)
 
-def train_dqn(env, agent, episodes=10, max_steps=200):  # Zmniejszona liczba kroków
+def train_dqn(env, agent, episodes=10, max_steps=1000):  # Zmniejszona liczba kroków
     total_rewards = []
     start_time = time.time()
     

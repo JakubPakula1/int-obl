@@ -8,3 +8,5 @@ scikit-learn
 neat-python
 swig
 gymnasium[box2d]
+seaborn>=0.12.0
+moviepy>=1.0.3
