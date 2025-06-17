@@ -7,14 +7,17 @@ from agents.random_agent import RandomAgent
 from training.train_neat import train_neat, continue_from_checkpoint as continue_neat
 from training.train_dqn import train_dqn, continue_from_checkpoint as continue_dqn
 from evaluation.evaluate import evaluate
+from training.train_ppo import train_ppo
 import os
+import time
 import glob
 
 def main():
     # Parsowanie argumentów wiersza poleceń
     parser = argparse.ArgumentParser(description='Car Racing RL')
-    parser.add_argument('--agent', type=str, default='neat', choices=['neat', 'dqn', 'random', 'ppo'],
-                        help='Rodzaj agenta do trenowania/testowania')
+    parser.add_argument('--agent', type=str, default='neat', 
+                       choices=['neat', 'dqn', 'random', 'ppo', 'fuzzy', 'genetic', 'pso'],
+                       help='Rodzaj agenta do trenowania/testowania')
     parser.add_argument('--mode', type=str, default='train', choices=['train', 'test'],
                         help='Tryb pracy: trenowanie lub testowanie')
     parser.add_argument('--model', type=str, default=None,
@@ -45,18 +48,33 @@ def main():
         elif args.agent == 'ppo':
             env = CarRacingEnv(render_mode=render_mode, continuous=True)  # PPO używa ciągłych akcji
             train_ppo_agent(env, args)
+        elif args.agent == 'genetic':
+            env = CarRacingEnv(render_mode=render_mode, continuous=True)
+            train_genetic_agent(env, args)
+        elif args.agent == 'pso':
+            env = CarRacingEnv(render_mode=render_mode, continuous=True)
+            train_pso_agent(env, args)
         elif args.agent == 'random':
             print("Agent losowy nie wymaga treningu")
     elif args.mode == 'test':
         if args.agent == 'neat':
             env = CarRacingEnv(render_mode=render_mode)
-            test_agent(env, args)
+            test_neat_agent(env, args)
         elif args.agent == 'dqn':
             env = CarRacingEnv(render_mode=render_mode, continuous=False)
             test_dqn_agent(env, args)
         elif args.agent == 'ppo':
             env = CarRacingEnv(render_mode=render_mode, continuous=True)
             test_ppo_agent(env, args)
+        elif args.agent == 'fuzzy':
+            env = CarRacingEnv(render_mode=render_mode, continuous=True)
+            test_fuzzy_agent(env, args)
+        elif args.agent == 'genetic':
+            env = CarRacingEnv(render_mode=render_mode, continuous=True)
+            test_genetic_agent(env, args)
+        elif args.agent == 'pso':
+            env = CarRacingEnv(render_mode=render_mode, continuous=True)
+            test_pso_agent(env, args)
         elif args.agent == 'random':
             print("Agent losowy nie wymaga treningu")
         
@@ -65,14 +83,27 @@ def main():
 
 def train_neat_agent(env, args):
     if args.continue_training:
-        checkpoints = glob.glob('checkpoints/neat-checkpoint-*')
-        if checkpoints:
-            latest_checkpoint = sorted(checkpoints)[-1]
+        # TYMCZASOWA POPRAWKA: Użyj konkretnego checkpointu
+        latest_checkpoint = 'checkpoints/neat-checkpoint-10'  # ← ZMIEŃ NA NAJNOWSZY
+        
+        if os.path.exists(latest_checkpoint):
             print(f"Kontynuowanie z checkpointu: {latest_checkpoint}")
             neat_agent, winner = continue_neat(latest_checkpoint, env, args.episodes)
         else:
-            print("Nie znaleziono checkpointów, rozpoczynanie nowego treningu...")
-            neat_agent, winner = train_neat(env, generations=args.episodes)
+            print("Szukam najnowszego checkpointu...")
+            checkpoints = glob.glob('checkpoints/neat-checkpoint-*')
+            if checkpoints:
+                def extract_number(filename):
+                    import re
+                    match = re.search(r'checkpoint-(\d+)', filename)
+                    return int(match.group(1)) if match else 0
+                
+                latest_checkpoint = max(checkpoints, key=extract_number)
+                print(f"Kontynuowanie z checkpointu: {latest_checkpoint}")
+                neat_agent, winner = continue_neat(latest_checkpoint, env, args.episodes)
+            else:
+                print("Nie znaleziono checkpointów, rozpoczynanie nowego treningu...")
+                neat_agent, winner = train_neat(env, generations=args.episodes)
     else:
         print("Rozpoczynanie nowego treningu NEAT...")
         neat_agent, winner = train_neat(env, generations=args.episodes)
@@ -104,78 +135,64 @@ def train_dqn_agent(env, args):
     # Trenowanie agenta DQN
     train_dqn(env, agent, episodes=args.episodes)
 
-def test_agent(env, args):
+def test_neat_agent(env, args):
+    """Testowanie agenta NEAT - POPRAWIONA WERSJA"""
+    from agents.neat_agent import NEATAgent
     
-    if args.agent == 'neat':
-        env_visual = CarRacingEnv(render_mode="human")
-        print(f"Action space: {env_visual.action_space}")
-        print(f"Action space type: {type(env_visual.action_space)}")
-        if args.model:
-            # Wczytaj konkretny model
-            import pickle
-            with open(args.model, 'rb') as f:
-                agent = pickle.load(f)
-            neat_agent = NEATAgent(agent)
-        else:
-            # Wczytaj najnowszy model
-            models = glob.glob('models/neat*.pkl')
-            if models:
-                latest_model = sorted(models)[-1]
-                print(f"Wczytywanie modelu: {latest_model}")
-                import pickle
-                with open(latest_model, 'rb') as f:
-                    agent = pickle.load(f)
-                neat_agent = NEATAgent(agent)
-            else:
-                print("Nie znaleziono modelu NEAT")
-                return
-        agent = neat_agent
-            
-    elif args.agent == 'dqn':
-        env_visual = CarRacingEnv(render_mode="human", continuous=False)
-        print(f"Action space: {env_visual.action_space}")
-        print(f"Action space type: {type(env_visual.action_space)}")
-        if args.model:
-            # Wczytaj konkretny model
-            agent = DQNAgent.load(args.model, (84, 84, 1), 5)
-        else:
-            # Wczytaj najnowszy model
-            models = glob.glob('checkpoints/dqn/*.keras')
-            if models:
-                latest_model = sorted(models)[-1]
-                print(f"Wczytywanie modelu: {latest_model}")
-                agent = DQNAgent.load(latest_model, (84, 84, 1), 5)
-            else:
-                print("Nie znaleziono modelu DQN")
-                return
-    
-                
-    elif args.agent == 'random':
-        agent = RandomAgent(5)  # 5 akcji
-    
+    if args.model:
+        print(f"Wczytywanie modelu: {args.model}")
+        # POPRAWKA: Użyj metody klasowej load_model
+        neat_agent = NEATAgent.load_model(args.model, 'configs/neat_config.txt')
+        if neat_agent is None:
+            print("❌ Nie udało się wczytać modelu!")
+            return
     else:
-        print(f"Testowanie agenta {args.agent} nie jest zaimplementowane")
-        return
+        # Znajdź najnowszy model
+        import glob
+        models = glob.glob('models/neat_*.pkl')
+        if models:
+            latest_model = max(models, key=os.path.getctime)
+            print(f"Wczytywanie najnowszego modelu: {latest_model}")
+            neat_agent = NEATAgent.load_model(latest_model, 'configs/neat_config.txt')
+        else:
+            print("❌ Nie znaleziono modeli NEAT!")
+            return
     
-    # Testowanie agenta
-    print(f"Testowanie agenta {args.agent}...")
-    observation = env_visual.reset()
-    total_reward = 0
-    steps = 0
+    print(f"🧬 Model NEAT wczytany - fitness: {neat_agent.best_genome.fitness:.2f}")
     
-    for _ in range(args.episodes * 1000):  # Maksymalna liczba kroków
-        action = agent.act(observation)
-        observation, reward, terminated, truncated, info = env_visual.step(action)
-        total_reward += reward
-        steps += 1
+    # Testowanie
+    total_rewards = []
+    
+    for episode in range(args.episodes):
+        print(f"\n=== EPIZOD {episode+1}/{args.episodes} ===")
+        observation, info = env.reset()  # POPRAWKA: Prawidłowy unpacking
         
-        if terminated or truncated:
-            print(f"Epizod zakończony po {steps} krokach z nagrodą: {total_reward:.2f}")
-            observation = env_visual.reset()
-            total_reward = 0
-            steps = 0
+        episode_reward = 0
+        steps = 0
+        start_time = time.time()
+        
+        for step in range(1000):
+            action = neat_agent.act(observation)
+            observation, reward, terminated, truncated, info = env.step(action)
             
-    env_visual.close()
+            episode_reward += reward
+            steps += 1
+            
+            if terminated or truncated:
+                break
+        
+        total_rewards.append(episode_reward)
+        episode_time = time.time() - start_time
+        
+        tiles_visited = info.get('tiles_visited', 0)
+        print(f"Epizod {episode+1}: {episode_reward:.2f} pts, {steps} kroków, {tiles_visited} płytek, {episode_time:.1f}s")
+    
+    # Statystyki
+    avg_reward = np.mean(total_rewards)
+    print(f"\n🎯 PODSUMOWANIE NEAT:")
+    print(f"📊 Średnia nagroda: {avg_reward:.2f}")
+    print(f"🏆 Najlepszy wynik: {max(total_rewards):.2f}")
+    print(f"📉 Najgorszy wynik: {min(total_rewards):.2f}")
 
 
 def test_dqn_agent(env, args):
@@ -327,7 +344,6 @@ def train_ppo_agent(env, args):
     """Trenowanie agenta PPO"""
     from agents.ppo_agent import PPOAgent
     from training.train_ppo import train_ppo
-    from training.train_ppo_v2 import train_ppo_enhanced
     
     if args.continue_training:
         # Implementacja kontynuacji treningu PPO
@@ -352,7 +368,7 @@ def train_ppo_agent(env, args):
         agent = PPOAgent((84, 84, 1), 3)
     
     # train_ppo(env, agent, episodes=args.episodes)
-    train_ppo_enhanced(env, agent, episodes=args.episodes)
+    train_ppo(env, agent, episodes=args.episodes)
 
 def test_ppo_agent(env, args):
     """Testowanie agenta PPO"""
@@ -432,6 +448,118 @@ def test_ppo_agent(env, args):
     print(f"Średnia nagroda: {np.mean(total_rewards):.2f}")
     print(f"Ukończone tory: {completed_laps}/{args.episodes}")
     print(f"Wskaźnik sukcesu: {completed_laps/args.episodes*100:.1f}%")
+
+def train_genetic_agent(env, args):
+    """Trenowanie agenta genetycznego"""
+    from agents.ga_agent import GeneticAgent
+    
+    agent = GeneticAgent(env, chromosome_length=600, population_size=30)
+    agent.train(num_generations=args.episodes)
+
+def train_pso_agent(env, args):
+    """Trenowanie agenta PSO"""
+    from agents.pso_agent import PSOAgent
+    
+    agent = PSOAgent(env, num_particles=20, dimensions=600)
+    agent.train(max_iterations=args.episodes)
+
+def test_fuzzy_agent(env, args):
+    """Testowanie agenta rozmytego"""
+    from agents.fuzzy_agent import FuzzyAgent
+    
+    agent = FuzzyAgent()
+    
+    total_rewards = []
+    for episode in range(args.episodes):
+        print(f"\n=== EPIZOD {episode+1}/{args.episodes} ===")
+        observation, info = env.reset()
+        episode_reward = 0
+        steps = 0
+        
+        for step in range(1000):
+            action = agent.act(observation)
+            observation, reward, terminated, truncated, info = env.step(action)
+            episode_reward += reward
+            steps += 1
+            
+            if terminated or truncated:
+                break
+        
+        total_rewards.append(episode_reward)
+        print(f"Epizod {episode+1}: {steps} kroków, {episode_reward:.2f} pkt")
+    
+    print(f"\n🧠 PODSUMOWANIE FUZZY:")
+    print(f"📊 Średnia nagroda: {np.mean(total_rewards):.2f}")
+
+def test_genetic_agent(env, args):
+    """Testowanie agenta genetycznego"""
+    from agents.ga_agent import GeneticAgent
+    
+    if args.model:
+        agent = GeneticAgent.load_best_genome(args.model, env)
+    else:
+        agent = GeneticAgent.load_best_genome('models/genetic_best_final.pkl', env)
+    
+    if agent is None:
+        print("❌ Nie można wczytać modelu genetycznego")
+        return
+    
+    total_rewards = []
+    for episode in range(args.episodes):
+        print(f"\n=== EPIZOD {episode+1}/{args.episodes} ===")
+        observation, info = env.reset()
+        episode_reward = 0
+        steps = 0
+        
+        for step in range(1000):
+            action = agent.act(observation, step)
+            observation, reward, terminated, truncated, info = env.step(action)
+            episode_reward += reward
+            steps += 1
+            
+            if terminated or truncated:
+                break
+        
+        total_rewards.append(episode_reward)
+        print(f"Epizod {episode+1}: {steps} kroków, {episode_reward:.2f} pkt")
+    
+    print(f"\n🧬 PODSUMOWANIE GENETIC:")
+    print(f"📊 Średnia nagroda: {np.mean(total_rewards):.2f}")
+
+def test_pso_agent(env, args):
+    """Testowanie agenta PSO"""
+    from agents.pso_agent import PSOAgent
+    
+    if args.model:
+        agent = PSOAgent.load_model(args.model, env)
+    else:
+        agent = PSOAgent.load_model('models/pso_best_final.pkl', env)
+    
+    if agent is None:
+        print("❌ Nie można wczytać modelu PSO")
+        return
+    
+    total_rewards = []
+    for episode in range(args.episodes):
+        print(f"\n=== EPIZOD {episode+1}/{args.episodes} ===")
+        observation, info = env.reset()
+        episode_reward = 0
+        steps = 0
+        
+        for step in range(1000):
+            action = agent.act(observation, step)
+            observation, reward, terminated, truncated, info = env.step(action)
+            episode_reward += reward
+            steps += 1
+            
+            if terminated or truncated:
+                break
+        
+        total_rewards.append(episode_reward)
+        print(f"Epizod {episode+1}: {steps} kroków, {episode_reward:.2f} pkt")
+    
+    print(f"\n🐝 PODSUMOWANIE PSO:")
+    print(f"📊 Średnia nagroda: {np.mean(total_rewards):.2f}")
 
   # Dla innych agentów
 if __name__ == "__main__":

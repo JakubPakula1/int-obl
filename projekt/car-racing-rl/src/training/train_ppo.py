@@ -3,14 +3,20 @@ import time
 import cv2
 
 def preprocess_state(state):
-    """Preprocessing obrazu dla PPO"""
-    gray = cv2.cvtColor(state, cv2.COLOR_RGB2GRAY)
-    resized = cv2.resize(gray, (84, 84))
-    normalized = resized / 255.0
-    return normalized.reshape(84, 84, 1)
+    """Preprocessing obrazu - identyczny jak w DQN"""
+    if len(state.shape) == 3:
+        # Konwersja do skali szarości
+        gray = cv2.cvtColor(state, cv2.COLOR_RGB2GRAY)
+        # Resize do 84x84
+        resized = cv2.resize(gray, (84, 84))
+        # Normalizacja
+        normalized = resized.astype(np.float32) / 255.0
+        # Dodaj wymiar kanału
+        return np.expand_dims(normalized, axis=-1)
+    return state
 
 def train_ppo(env, agent, episodes=100, max_steps=1000):
-    """Trenowanie agenta PPO - poprawiona wersja"""
+    """Trenowanie agenta PPO"""
     total_rewards = []
     start_time = time.time()
     
@@ -43,7 +49,7 @@ def train_ppo(env, agent, episodes=100, max_steps=1000):
             episode_reward += reward
             steps += 1
             
-            # WAŻNE: Sprawdź czy trzeba wykonać aktualizację
+            # Wykonaj aktualizację jeśli bufor jest pełny
             if agent.should_update():
                 print(f"📊 Wykonywanie aktualizacji PPO po {len(agent.states)} krokach...")
                 agent.update()
@@ -74,8 +80,8 @@ def train_ppo(env, agent, episodes=100, max_steps=1000):
         print(f"Epizod {episode}/{episodes}: {steps} kroków, {episode_reward:.2f} pkt, "
               f"średnia: {avg_reward:.2f}, czas: {episode_time:.1f}s - {result}")
         
-        # Zapisz model co 10 epizodów
-        if agent.episodes % 10 == 0:
+        # Zapisz model co 20 epizodów
+        if agent.episodes % 20 == 0:
             agent.save_model()
             print(f"💾 Model zapisany po epizodzie {agent.episodes}")
     

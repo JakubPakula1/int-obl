@@ -2,6 +2,7 @@ import neat
 import numpy as np
 import pickle
 import os
+import cv2
 
 class NEATAgent:
     def __init__(self, config_path):
@@ -12,6 +13,13 @@ class NEATAgent:
             config_path (str): Ścieżka do pliku konfiguracyjnego NEAT
         """
         self.config_path = config_path
+        
+        # Sprawdź czy plik konfiguracji istnieje
+        if not os.path.exists(config_path):
+            print(f"❌ Brak pliku konfiguracji: {config_path}")
+            print("Tworzenie domyślnej konfiguracji...")
+            self.create_default_config(config_path)
+        
         self.config = neat.Config(
             neat.DefaultGenome, neat.DefaultReproduction,
             neat.DefaultSpeciesSet, neat.DefaultStagnation,
@@ -27,33 +35,41 @@ class NEATAgent:
         stats = neat.StatisticsReporter()
         self.population.add_reporter(stats)
         
+        print(f"🧬 NEAT Agent utworzony:")
+        print(f"   Populacja: {self.config.pop_size}")
+        print(f"   Wejścia: {self.config.genome_config.num_inputs}")
+        print(f"   Wyjścia: {self.config.genome_config.num_outputs}")
+        
     def preprocess_observation(self, observation):
         """
-        Przetwarzanie obserwacji do formatu odpowiedniego dla sieci neuronowej
+        Przetwarzanie konsystentne z DQN/PPO - 84x84 pikseli
         
         Args:
-            observation: Obserwacja ze środowiska (96x96x3 obraz)
+            observation: Obserwacja ze środowiska
             
         Returns:
             numpy.array: Spłaszczona i znormalizowana obserwacja
         """
-            # Konwertuj do skali szarości
+        # Obsługa różnych formatów wejścia
+        if isinstance(observation, tuple):
+            observation = observation[0]
+        
+        # Konwersja do skali szarości
         if len(observation.shape) == 3:
-            gray = np.dot(observation[...,:3], [0.2989, 0.5870, 0.1140])
+            gray = cv2.cvtColor(observation, cv2.COLOR_RGB2GRAY)
         else:
             gray = observation
             
-        # Bardziej agresywne zmniejszenie: 96x96 -> 6x4 = 24 piksele
-        downsampled = gray[::16, ::24]  # Co 16. piksel w pionie, co 24. w poziomie
+        # POPRAWKA: Konsystentne z DQN/PPO - 84x84 pikseli
+        resized = cv2.resize(gray, (84, 84), interpolation=cv2.INTER_AREA)
         
-        # Normalizuj do zakresu [-1, 1]
-        normalized = (downsampled / 255.0) * 2.0 - 1.0
+        # Normalizuj do zakresu [-1, 1] (lepsze dla NEAT niż [0, 1])
+        normalized = (resized.astype(np.float32) / 255.0) * 2.0 - 1.0
         
-        return normalized.flatten()
-    
+        return normalized.flatten()  # 7056 elementów
     def act(self, observation, genome=None):
         """
-        Wybierz akcję na podstawie obserwacji
+        POPRAWIONA funkcja wyboru akcji
         
         Args:
             observation: Obserwacja ze środowiska
@@ -63,153 +79,231 @@ class NEATAgent:
             numpy.array: Akcja [steering, gas, brake]
         """
         if genome is None and self.best_net is None:
-            # Zwróć losową akcję jeśli nie ma wytrenowanej sieci
+            # POPRAWKA: Bardziej sensowne akcje domyślne
             return np.array([
-                np.random.uniform(-1, 1),  # steering
-                np.random.uniform(0, 1),   # gas
-                np.random.uniform(0, 1)    # brake
+                np.random.uniform(-0.5, 0.5),  # Mniejsze losowe skręty
+                np.random.uniform(0.3, 0.7),   # Umiarkowana prędkość
+                np.random.uniform(0.0, 0.2)    # Rzadkie hamowanie
             ])
         
-        # Przetwórz obserwację
-        inputs = self.preprocess_observation(observation)
-        
-        # Użyj sieci neuronowej
-        if genome is not None:
-            net = neat.nn.FeedForwardNetwork.create(genome, self.config)
-        else:
-            net = self.best_net
+        try:
+            # Przetwórz obserwację
+            inputs = self.preprocess_observation(observation)
             
-        outputs = net.activate(inputs)
-        
-        # Przekształć wyjścia na akcje
-        steering = np.tanh(outputs[0])  # [-1, 1]
-        gas = max(0, outputs[1])        # [0, inf] -> [0, 1]
-        brake = max(0, outputs[2])      # [0, inf] -> [0, 1]
-        
-        # Normalizuj gas i brake
-        gas = min(1.0, gas)
-        brake = min(1.0, brake)
-        
-        return np.array([steering, gas, brake])
+            # POPRAWKA: Sprawdź długość wejścia
+            expected_inputs = self.config.genome_config.num_inputs
+            if len(inputs) != expected_inputs:
+                print(f"⚠️ Błąd wymiarów: otrzymano {len(inputs)}, oczekiwano {expected_inputs}")
+                return np.array([0.0, 0.3, 0.0])  # Bezpieczna akcja
+            
+            # Użyj sieci neuronowej
+            if genome is not None:
+                net = neat.nn.FeedForwardNetwork.create(genome, self.config)
+            else:
+                net = self.best_net
+                
+            outputs = net.activate(inputs)
+            
+            # POPRAWKA: Sprawdź czy mamy wystarczająco wyjść
+            if len(outputs) < 3:
+                print(f"⚠️ Błąd wyjść: otrzymano {len(outputs)}, oczekiwano 3")
+                return np.array([0.0, 0.3, 0.0])
+            
+            # POPRAWKA: Bardziej stabilne przekształcenia
+            steering = np.clip(np.tanh(outputs[0]), -1.0, 1.0)  # [-1, 1]
+            gas = np.clip(outputs[1], 0.0, 1.0)                 # [0, 1]
+            brake = np.clip(outputs[2], 0.0, 1.0)               # [0, 1]
+            
+            return np.array([steering, gas, brake])
+            
+        except Exception as e:
+            print(f"❌ Błąd w act(): {e}")
+            return np.array([0.0, 0.3, 0.0])  # Bezpieczna akcja
     
-    def evaluate_genome(self, genome, config, env, num_episodes=3):
+    def evaluate_genome(self, genome, config, env, num_episodes=1, max_steps=1000):
         """
-        Ocena pojedynczego genomu
+        POPRAWIONA ocena pojedynczego genomu
         
         Args:
             genome: Genom NEAT do oceny
             config: Konfiguracja NEAT
             env: Środowisko
             num_episodes: Liczba epizodów do oceny
+            max_steps: Maksymalna liczba kroków
             
         Returns:
             float: Fitness genomu
         """
-        net = neat.nn.FeedForwardNetwork.create(genome, config)
+        try:
+            net = neat.nn.FeedForwardNetwork.create(genome, config)
+        except Exception as e:
+            print(f"❌ Błąd tworzenia sieci: {e}")
+            return -1000
+        
         total_fitness = 0
         
         for episode in range(num_episodes):
-            observation = env.reset()
-            episode_reward = 0
-            steps = 0
-            negative_steps = 0
-            
-            while steps < 300:  # Zmniejsz z 1000 do 300 kroków
-                # Wybierz akcję
-                inputs = self.preprocess_observation(observation)
-                outputs = net.activate(inputs)
+            try:
+                # POPRAWKA: Prawidłowy unpacking env.reset()
+                observation, info = env.reset()
+                episode_reward = 0
+                steps = 0
+                negative_steps = 0
+                stagnant_steps = 0
+                prev_tiles = info.get('tiles_visited', 0)
                 
-                # Przekształć na akcję
-                steering = np.tanh(outputs[0])
-                gas = max(0, min(1.0, outputs[1]))
-                brake = max(0, min(1.0, outputs[2]))
-                action = np.array([steering, gas, brake])
-                
-                # Wykonaj krok
-                observation, reward, terminated, truncated, info = env.step(action)
-                episode_reward += reward
-                steps += 1
-                
-                # Przerwij wcześniej jeśli auto stoi w miejscu
-                if reward < -0.1:
-                    negative_steps += 1
-                    if negative_steps > 50:  # Przerwij po 50 krokach z negatywną nagrodą
+                while steps < max_steps:
+                    # Wybierz akcję
+                    try:
+                        inputs = self.preprocess_observation(observation)
+                        outputs = net.activate(inputs)
+                        
+                        # Konwertuj na akcję
+                        if len(outputs) >= 3:
+                            steering = np.clip(np.tanh(outputs[0]), -1.0, 1.0)
+                            gas = np.clip(outputs[1], 0.0, 1.0)
+                            brake = np.clip(outputs[2], 0.0, 1.0)
+                            action = np.array([steering, gas, brake])
+                        else:
+                            action = np.array([0.0, 0.3, 0.0])
+                            
+                    except Exception as e:
+                        print(f"❌ Błąd aktywacji: {e}")
+                        action = np.array([0.0, 0.3, 0.0])
+                    
+                    # Wykonaj krok
+                    observation, reward, terminated, truncated, info = env.step(action)
+                    episode_reward += reward
+                    steps += 1
+                    
+                    # POPRAWKA: Lepsze kryteria przerwania
+                    current_tiles = info.get('tiles_visited', 0)
+                    
+                    # Sprawdź postęp w eksploracji
+                    if current_tiles > prev_tiles:
+                        stagnant_steps = 0  # Reset jeśli jest postęp
+                        prev_tiles = current_tiles
+                    else:
+                        stagnant_steps += 1
+                    
+                    # Przerwij jeśli długo bez postępu
+                    if stagnant_steps > 100:  # 100 kroków bez nowych płytek
                         break
-                else:
-                    negative_steps = 0
+                    
+                    # Przerwij jeśli zbyt długo negatywne nagrody
+                    if reward < -1.0:
+                        negative_steps += 1
+                        if negative_steps > 50:
+                            break
+                    else:
+                        negative_steps = 0
+                    
+                    if terminated or truncated:
+                        break
                 
-                if terminated or truncated:
-                    break
-            
-            total_fitness += episode_reward
+                # POPRAWKA: Dodatkowe bonusy za długie przetrwanie i eksplorację
+                if steps > 200:
+                    episode_reward += 20
+                if steps > 350:
+                    episode_reward += 50
+                
+                # Bonus za eksplorację
+                tiles_bonus = current_tiles * 2  # 2 punkty za każdą odwiedzoną płytkę
+                episode_reward += tiles_bonus
+                
+                total_fitness += episode_reward
+                
+            except Exception as e:
+                print(f"❌ Błąd w epizodzie: {e}")
+                total_fitness -= 100  # Kara za błąd
+        
+        avg_fitness = total_fitness / num_episodes
+        return max(avg_fitness, -1000)  # Minimalna fitness
     
-        return total_fitness / num_episodes
-    
-    def train(self, env, generations=50):
+    def train(self, env, generations=20):
         """
-        Trenowanie z zapisywaniem checkpointów
+        POPRAWIONE trenowanie z lepszą obsługą błędów
         """
+        print(f"🧬 Rozpoczynam trening NEAT na {generations} generacji")
+        
         # Dodaj checkpointer
-        checkpointer = neat.Checkpointer(generation_interval=5, filename_prefix='checkpoints/neat-checkpoint-')
+        os.makedirs('checkpoints', exist_ok=True)
+        checkpointer = neat.Checkpointer(
+            generation_interval=5, 
+            filename_prefix='checkpoints/neat-checkpoint-'
+        )
         self.population.add_reporter(checkpointer)
         
         def eval_genomes(genomes, config):
-            for genome_id, genome in genomes:
-                genome.fitness = self.evaluate_genome(genome, config, env)
+            print(f"Oceniam {len(genomes)} genomów...")
+            
+            for i, (genome_id, genome) in enumerate(genomes):
+                if i % 20 == 0:  # Progress co 20 genomów
+                    print(f"  Genom {i+1}/{len(genomes)}")
                 
-                if self.best_genome is None or genome.fitness > self.best_genome.fitness:
-                    self.best_genome = genome
-                    self.best_net = neat.nn.FeedForwardNetwork.create(genome, config)
-        
-        winner = self.population.run(eval_genomes, generations)
-        
-        self.best_genome = winner
-        self.best_net = neat.nn.FeedForwardNetwork.create(winner, self.config)
-        
-        return winner
-    
-    def save_model(self, filename):
-        """Zapisz najlepszy model"""
-        if self.best_genome is not None:
-            with open(filename, 'wb') as f:
-                pickle.dump(self.best_genome, f)
-    
-    def load_model(self, filename):
-        """Wczytaj model z pliku"""
-        if os.path.exists(filename):
-            with open(filename, 'rb') as f:
-                self.best_genome = pickle.load(f)
-                self.best_net = neat.nn.FeedForwardNetwork.create(self.best_genome, self.config)
-
-
-    def continue_training_from_checkpoint(self, env, additional_generations=10):
-        """
-        Kontynuuj trening z aktualnego stanu populacji
-        
-        Args:
-            env: Środowisko do treningu  
-            additional_generations: Liczba dodatkowych generacji
-        """
-        if self.best_genome is None:
-            print("Brak zapisanego genomu do kontynuacji treningu!")
-            return None
-        
-        print(f"Kontynuowanie treningu z fitness: {self.best_genome.fitness}")
-        
-        def eval_genomes(genomes, config):
-            for genome_id, genome in genomes:
                 genome.fitness = self.evaluate_genome(genome, config, env)
                 
                 # Śledź najlepszy genom
                 if self.best_genome is None or genome.fitness > self.best_genome.fitness:
                     self.best_genome = genome
                     self.best_net = neat.nn.FeedForwardNetwork.create(genome, config)
+                    print(f"  🌟 Nowy najlepszy: fitness={genome.fitness:.2f}")
         
-        # Kontynuuj trening z obecną populacją
-        winner = self.population.run(eval_genomes, additional_generations)
+        # Uruchom ewolucję
+        winner = self.population.run(eval_genomes, generations)
         
-        # Zaktualizuj najlepszy genom
+        # Zapisz najlepszy model
         self.best_genome = winner
         self.best_net = neat.nn.FeedForwardNetwork.create(winner, self.config)
         
+        # Automatyczne zapisanie
+        os.makedirs('models', exist_ok=True)
+        self.save_model('models/neat_best.pkl')
+        
+        print(f"🏆 Trening zakończony!")
+        print(f"📊 Najlepsza fitness: {winner.fitness:.2f}")
+        
         return winner
+    
+    def save_model(self, filename):
+        """POPRAWIONE zapisywanie modelu"""
+        if self.best_genome is not None:
+            os.makedirs(os.path.dirname(filename), exist_ok=True)
+            with open(filename, 'wb') as f:
+                # Zapisz genom i konfigurację
+                data = {
+                    'genome': self.best_genome,
+                    'config_path': self.config_path,
+                    'fitness': self.best_genome.fitness
+                }
+                pickle.dump(data, f)
+            print(f"💾 Model zapisany: {filename}")
+        else:
+            print("⚠️ Brak genomu do zapisania!")
+    
+    @classmethod
+    def load_model(cls, filename, config_path):
+        """POPRAWIONE ładowanie modelu"""
+        if os.path.exists(filename):
+            with open(filename, 'rb') as f:
+                data = pickle.load(f)
+            
+            # Utwórz agenta z konfiguracji
+            agent = cls(config_path)
+            
+            # Wczytaj genom
+            if isinstance(data, dict):
+                agent.best_genome = data['genome']
+                print(f"📈 Wczytano model z fitness: {data.get('fitness', 'nieznana')}")
+            else:
+                # Stary format - sam genom
+                agent.best_genome = data
+            
+            # Utwórz sieć
+            agent.best_net = neat.nn.FeedForwardNetwork.create(agent.best_genome, agent.config)
+            
+            print(f"✅ Model wczytany: {filename}")
+            return agent
+        else:
+            print(f"❌ Plik nie istnieje: {filename}")
+            return None
