@@ -324,12 +324,6 @@ python src/training/train_neat.py --generations 50
 - [Stable Baselines3](https://stable-baselines3.readthedocs.io/)
 - [NEAT-Python](https://neat-python.readthedocs.io/)
 
-## 📄 Licencja
-
-MIT License - pełny tekst w pliku `LICENSE`
-
----
-
 ## 🎮 Quick Start
 
 ```bash
