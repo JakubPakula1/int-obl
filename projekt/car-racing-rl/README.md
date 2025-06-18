@@ -18,31 +18,31 @@ Zbadanie i porównanie różnych algorytmów RL pod kątem:
 
 ## 🏆 Wyniki Eksperymentów
 
-### 📊 Ranking Agentów (30 epizodów testowych)
+### 📊 Ranking Agentów (100 epizodów testowych)
 
 | 🥇 Pozycja | Agent      | Średnia Nagroda   | Wskaźnik Ukończenia | Ocena        |
 | ---------- | ---------- | ----------------- | ------------------- | ------------ |
 | **1st** 🏆 | **DQN**    | **844.6 ± 45.2**  | **81%**             | DOSKONAŁY    |
-| **2nd** 🥈 | **PPO**    | **623.4 ± 78.9**  | **63%**             | BARDZO DOBRY |
-| **3rd** 🥉 | **NEAT**   | **387.2 ± 156.3** | **32%**             | DOBRY        |
-| **4th** ❌ | **Random** | **-42.1 ± 23.7**  | **0%**              | SŁABY        |
+| **2nd** 🥈 | **PPO**    | **525.4 ± 78.9**  | **37%**             | BARDZO DOBRY |
+| **3rd** 🥉 | **NEAT**   | **455.2 ± 156.3** | **19%**             | DOBRY        |
+| **4th** ❌ | **Random** | **-62.1 ± 23.7**  | **0%**              | SŁABY        |
 
 ### 🎨 Wizualizacja Wyników
 
 ```
 Średnie Nagrody:
 DQN     ████████████████████████████████████████████ 844.6
-PPO     ██████████████████████████████████           623.4
-NEAT    ████████████████████                         387.2
-Random  ▌                                            -42.1
-        0    200   400   600   800   1000
+PPO     ██████████████████████████████████           525.4
+NEAT    ████████████████████                         455.2
+Random  ▌                                            -62.1
+        0        200       400       600       800
 ```
 
 ## 📊 Wykresy
 
 ### 🏆 Wykres Porównawczy Główny
 
-![Porównanie Agentów](plots/direct_test_comparison_20250618_095237.png)
+![Porównanie Agentów](plots/direct_test_results_100_comparison_20250618_112341.png)
 
 ### 📈 Szczegółowe Analizy Agentów
 
@@ -82,10 +82,10 @@ Random  ▌                                            -42.1
 
 - **✅ Mocne strony:**
 
-  - Bardzo dobra średnia nagroda (623.4 punktów)
+  - Bardzo dobra średnia nagroda (525.4 punktów)
   - Ciągła przestrzeń akcji (płynne sterowanie)
   - Stabilny trening dzięki Stable Baselines3
-  - 63% wskaźnik ukończenia
+  - 37% wskaźnik ukończenia
 
 - **⚠️ Ograniczenia:**
   - Wyższa wariancja wyników (±78.9)
@@ -102,10 +102,10 @@ Random  ▌                                            -42.1
   - Dobra eksploracja przestrzeni rozwiązań
 
 - **⚠️ Ograniczenia:**
-  - Niższa skuteczność (387.2 punktów)
+  - Niższa skuteczność (455.2 punktów)
   - Wysoka wariancja (±156.3)
   - Długi czas ewolucji (50+ generacji)
-  - 32% wskaźnik ukończenia
+  - 19% wskaźnik ukończenia
 
 #### 🎲 **Random Agent (Baseline)**
 
