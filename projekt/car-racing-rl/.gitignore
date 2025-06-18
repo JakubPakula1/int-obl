@@ -230,7 +230,5 @@ mlruns/
 # Ignore but keep directory structure
 results/*
 !results/.gitkeep
-plots/*
-!plots/.gitkeep
 videos/*
 !videos/.gitkeep
