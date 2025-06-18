@@ -75,7 +75,7 @@ class LapCompletionFixWrapper(gym.Wrapper):
                 if hasattr(gym_env, 'track') and gym_env.track:
                     self.total_tiles = len(gym_env.track)
                     self.track_discovered = True
-                    print(f"🗺️  Tor odkryty (metoda 1)! Płytek: {self.total_tiles}")
+                    print(f"🗺️  Tor odkryty! Płytek: {self.total_tiles}")
                     return
                 elif hasattr(gym_env, 'road') and gym_env.road:
                     self.total_tiles = len(gym_env.road)
