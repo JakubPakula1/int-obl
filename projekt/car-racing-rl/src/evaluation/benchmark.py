@@ -1,6 +1,6 @@
 # src/evaluation/benchmark.py
 class AutoBenchmark:
-    def __init__(self, agents=['neat', 'dqn', 'ppo'], episodes_per_test=10):
+    def __init__(self, agents=['neat', 'dqn', 'ppo', 'random'], episodes_per_test=50):
         self.agents = agents
         self.episodes_per_test = episodes_per_test
         self.results = {}

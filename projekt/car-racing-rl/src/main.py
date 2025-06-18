@@ -76,7 +76,8 @@ def main():
             env = CarRacingEnv(render_mode=render_mode, continuous=True)
             test_pso_agent(env, args)
         elif args.agent == 'random':
-            print("Agent losowy nie wymaga treningu")
+            env = CarRacingEnv(render_mode=render_mode, continuous=True)
+            test_random_agent(env, args)
         
     
     env.close()
@@ -371,84 +372,98 @@ def train_ppo_agent(env, args):
     train_ppo(env, agent, episodes=args.episodes)
 
 def test_ppo_agent(env, args):
-    """Testowanie agenta PPO"""
-    from agents.ppo_agent import PPOAgent
-    from training.train_ppo import preprocess_state
+    from stable_baselines3 import PPO
     import time
-    
-    # Wczytaj model
-    if args.model:
-        actor_path = args.model
-        critic_path = args.model.replace('_actor.keras', '_critic.keras')
-        agent = PPOAgent.load(actor_path, critic_path, (84, 84, 1), 3)
-    else:
-        import glob
-        actor_models = glob.glob('checkpoints/ppo/*_actor.keras')
-        if actor_models:
-            def extract_episode_number(filename):
-                import re
-                match = re.search(r'ep(\d+)', filename)
-                return int(match.group(1)) if match else 0
-            
-            latest_actor = max(actor_models, key=extract_episode_number)
-            latest_critic = latest_actor.replace('_actor.keras', '_critic.keras')
-            
-            print(f"Wczytywanie modeli: {latest_actor}, {latest_critic}")
-            agent = PPOAgent.load(latest_actor, latest_critic, (84, 84, 1), 3)
-        else:
-            print("Nie znaleziono modeli PPO")
-            return
-    
-    print(f"Model PPO: epizody treningowe={agent.episodes}")
-    
-    # Testowanie
-    total_rewards = []
-    completed_laps = 0
-    
-    for episode in range(args.episodes):
-        print(f"\n=== EPIZOD {episode+1}/{args.episodes} ===")
-        observation, info = env.reset()
-        observation = preprocess_state(observation)
-        
-        episode_reward = 0
-        steps = 0
-        start_time = time.time()
-        
-        for step in range(1000):
-            action = agent.act(observation)  # Używa deterministycznej polityki w testach
-            next_observation, reward, terminated, truncated, info = env.step(action)
-            next_observation = preprocess_state(next_observation)
-            
-            observation = next_observation
-            episode_reward += reward
-            steps += 1
-            
-            if steps % 100 == 0:
-                print(f"  Krok {steps}, Nagroda: {episode_reward:.2f}")
-            
-            if terminated or truncated:
-                break
-        
-        episode_time = time.time() - start_time
-        total_rewards.append(episode_reward)
-        
-        # Ocena rezultatu
-        if terminated and episode_reward > 600:
-            completed_laps += 1
-            result_text = "🏆 TOR UKOŃCZONY!"
-        elif terminated and episode_reward > 300:
-            result_text = "🚗 Dobra jazda - prawie ukończył!"
-        else:
-            result_text = "❌ Nie ukończył toru"
-        
-        print(f"Epizod {episode+1}: {steps} kroków, {episode_reward:.2f} pkt, {result_text}")
-    
-    # Podsumowanie
-    print(f"\n=== PODSUMOWANIE PPO ===")
-    print(f"Średnia nagroda: {np.mean(total_rewards):.2f}")
-    print(f"Ukończone tory: {completed_laps}/{args.episodes}")
-    print(f"Wskaźnik sukcesu: {completed_laps/args.episodes*100:.1f}%")
+    from environments.lap_completion_fix_wrapper import LapCompletionFixWrapper
+    import sys
 
+    env = LapCompletionFixWrapper(env)
+    model_path = "models/ppo_carracing1"
+
+    if not os.path.exists(model_path + ".zip"):
+        print(f"❌ Model nie znaleziony: {model_path}.zip")
+        print("Dostępne modele:")
+        if os.path.exists("models/"):
+            for file in os.listdir("models/"):
+                if file.endswith(('.zip', '.pkl')):
+                    print(f"  - {file}")
+        sys.exit(1)
+
+    try:
+        model = PPO.load(model_path)
+        print(f"✅ Model wczytany: {model_path}")
+    except Exception as e:
+        print(f"❌ Błąd wczytywania modelu: {e}")
+        sys.exit(1)
+
+    episodes = 5
+    total_rewards = []
+
+    print(f"🚀 Rozpoczynanie ewaluacji PPO na {episodes} epizodów")
+
+    for ep in range(episodes):
+        print(f"\n=== EPIZOD {ep + 1}/{episodes} ===")
+        obs, info = env.reset()
+        done = False
+        total_reward = 0
+        steps = 0
+
+        while not done:
+            action, _ = model.predict(obs, deterministic=True)  # deterministic=True dla testów
+            obs, reward, terminated, truncated, info = env.step(action)
+            total_reward += reward
+            steps += 1
+            done = terminated or truncated
+            
+            # Opcjonalne spowolnienie dla lepszej wizualizacji
+            time.sleep(1/60)
+            
+            # Zabezpieczenie przed nieskończoną pętlą
+            if steps > 1000:
+                print("⏰ Timeout - przerwano epizod")
+                break
+
+        total_rewards.append(total_reward)
+        
+        # Ocena wyniku
+        if terminated and total_reward > 600:
+            result = "🏆 TOR UKOŃCZONY!"
+        elif terminated and total_reward > 300:
+            result = "🚗 Dobra jazda!"
+        elif total_reward > 0:
+            result = "✅ Pozytywny wynik"
+        else:
+            result = "❌ Słaby wynik"
+        
+        print(f"Epizod {ep + 1}: {steps} kroków, {total_reward:.2f} pkt - {result}")
+        
+        # Informacje o postępie na torze
+        tiles_visited = info.get('tiles_visited', 0)
+        total_tiles = info.get('total_tiles', 0)
+        if total_tiles > 0:
+            progress = (tiles_visited / total_tiles) * 100
+            print(f"Postęp na torze: {tiles_visited}/{total_tiles} płytek ({progress:.1f}%)")
+
+    # Podsumowanie
+    print(f"\n{'='*50}")
+    print(f"=== PODSUMOWANIE EWALUACJI PPO ===")
+    print(f"{'='*50}")
+    print(f"Średnia nagroda: {sum(total_rewards)/len(total_rewards):.2f}")
+    print(f"Najlepszy wynik: {max(total_rewards):.2f}")
+    print(f"Najgorszy wynik: {min(total_rewards):.2f}")
+
+    # Analiza sukcesu
+    successful_runs = sum(1 for r in total_rewards if r > 600)
+    good_runs = sum(1 for r in total_rewards if r > 300)
+    positive_runs = sum(1 for r in total_rewards if r > 0)
+
+    print(f"\nAnaliza wyników:")
+    print(f"Ukończone tory (>600 pkt): {successful_runs}/{episodes} ({successful_runs/episodes*100:.1f}%)")
+    print(f"Dobre wyniki (>300 pkt): {good_runs}/{episodes} ({good_runs/episodes*100:.1f}%)")
+    print(f"Pozytywne wyniki (>0 pkt): {positive_runs}/{episodes} ({positive_runs/episodes*100:.1f}%)")
+
+    env.close()
+    print("\n✅ Ewaluacja zakończona!")
 def train_genetic_agent(env, args):
     """Trenowanie agenta genetycznego"""
     from agents.ga_agent import GeneticAgent
@@ -561,6 +576,129 @@ def test_pso_agent(env, args):
     print(f"\n🐝 PODSUMOWANIE PSO:")
     print(f"📊 Średnia nagroda: {np.mean(total_rewards):.2f}")
 
+def test_random_agent(env, args):
+    """Testowanie agenta losowego - baseline"""
+    from agents.random_agent import RandomAgent
+    import time
+    import numpy as np
+    
+    agent = RandomAgent()
+    print(f"🎲 Testowanie agenta losowego - {args.episodes} epizodów")
+    
+    total_rewards = []
+    total_steps = []
+    completed_laps = 0
+    
+    for episode in range(args.episodes):
+        print(f"\n=== EPIZOD {episode+1}/{args.episodes} ===")
+        observation, info = env.reset()
+        
+        episode_reward = 0
+        steps = 0
+        start_time = time.time()
+        
+        for step in range(1000):
+            # Agent losowy nie potrzebuje obserwacji - działania są losowe
+            action = agent.act()
+            observation, reward, terminated, truncated, info = env.step(action)
+            
+            episode_reward += reward
+            steps += 1
+            
+            # Wyświetl progress co 200 kroków
+            if steps % 200 == 0:
+                print(f"  Krok {steps}, Nagroda: {episode_reward:.2f}")
+            
+            if terminated or truncated:
+                break
+        
+        episode_time = time.time() - start_time
+        total_rewards.append(episode_reward)
+        total_steps.append(steps)
+        
+        # Ocena rezultatu epizodu
+        if terminated and episode_reward > 600:
+            completed_laps += 1
+            result_text = "🏆 TOR UKOŃCZONY! (niesamowite szczęście!)"
+        elif terminated and episode_reward > 300:
+            result_text = "🍀 Bardzo szczęśliwy przejazd!"
+        elif terminated and episode_reward > 100:
+            result_text = "🎲 Przyzwoity losowy wynik"
+        elif terminated and episode_reward > 0:
+            result_text = "✅ Pozytywny wynik"
+        elif terminated:
+            result_text = "❌ Wypadł z toru (typowe dla losowego)"
+        else:
+            result_text = "⏱️ Timeout - przekroczono limit czasu"
+        
+        print(f"Epizod {episode+1} ukończony:")
+        print(f"  Kroki: {steps}/1000")
+        print(f"  Nagroda: {episode_reward:.2f}")
+        print(f"  Czas: {episode_time:.2f}s")
+        print(f"  Wynik: {result_text}")
+    
+    # Podsumowanie końcowe
+    print(f"\n{'='*50}")
+    print(f"=== PODSUMOWANIE TESTÓW RANDOM ===")
+    print(f"{'='*50}")
+    
+    try:
+        mean_reward = sum(total_rewards) / len(total_rewards)
+        std_reward = (sum((r - mean_reward)**2 for r in total_rewards) / len(total_rewards))**0.5
+        mean_steps = sum(total_steps) / len(total_steps)
+        
+        print(f"Średnia nagroda: {mean_reward:.2f} ± {std_reward:.2f}")
+        print(f"Najlepszy wynik: {max(total_rewards):.2f}")
+        print(f"Najgorszy wynik: {min(total_rewards):.2f}")
+        print(f"Średnia liczba kroków: {mean_steps:.1f}")
+        print(f"Najdłuższy epizod: {max(total_steps)} kroków")
+        print(f"Najkrótszy epizod: {min(total_steps)} kroków")
+        
+        # Analiza sukcesu
+        print(f"\nAnaliza wyników (baseline losowy):")
+        successful_runs = sum(1 for r in total_rewards if r > 600)
+        good_runs = sum(1 for r in total_rewards if r > 300)
+        decent_runs = sum(1 for r in total_rewards if r > 100)
+        positive_runs = sum(1 for r in total_rewards if r > 0)
+        
+        print(f"Ukończone tory (>600 pkt): {successful_runs}/{args.episodes} ({successful_runs/args.episodes*100:.1f}%)")
+        print(f"Bardzo dobre (>300 pkt): {good_runs}/{args.episodes} ({good_runs/args.episodes*100:.1f}%)")
+        print(f"Przyzwoite (>100 pkt): {decent_runs}/{args.episodes} ({decent_runs/args.episodes*100:.1f}%)")
+        print(f"Pozytywne wyniki (>0 pkt): {positive_runs}/{args.episodes} ({positive_runs/args.episodes*100:.1f}%)")
+        
+        # Ocena jako baseline
+        print(f"\n💡 Analiza baseline:")
+        if successful_runs >= 1:
+            print("🤯 NIESPOTYKANE SZCZĘŚCIE! Agent losowy ukończył tor!")
+        elif good_runs >= args.episodes * 0.1:
+            print("🍀 Niezwykle szczęśliwy agent losowy!")
+        elif decent_runs >= args.episodes * 0.3:
+            print("🎲 Typowy agent losowy - czasami ma szczęście")
+        elif positive_runs >= args.episodes * 0.5:
+            print("📊 Normalny baseline - około połowy wyników pozytywnych")
+        else:
+            print("❌ Bardzo pechowy agent losowy")
+        
+        # Znaczenie jako baseline
+        print(f"\n📈 Znaczenie jako baseline:")
+        print(f"• Każdy inteligentny agent powinien osiągać lepsze wyniki")
+        print(f"• Średnia nagroda {mean_reward:.2f} to minimum do pokonania")
+        print(f"• Wskaźnik sukcesu {successful_runs/args.episodes*100:.1f}% to próg referencyjny")
+        
+        if mean_reward > 0:
+            print(f"• ✅ Baseline wydaje się rozsądny")
+        else:
+            print(f"• ⚠️ Bardzo niski baseline - środowisko może być trudne")
+        
+        return {
+            'avg_reward': mean_reward,
+            'success_rate': successful_runs/args.episodes*100,
+            'total_rewards': total_rewards
+        }
+    
+    except Exception as e:
+        print(f"❌ Błąd w obliczeniach: {e}")
+        return None
   # Dla innych agentów
 if __name__ == "__main__":
     main()

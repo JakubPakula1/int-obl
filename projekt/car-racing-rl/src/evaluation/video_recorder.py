@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip, concatenate_videoclips
+from moviepy import VideoFileClip, TextClip, CompositeVideoClip, concatenate_videoclips
 class ProgressionRecorder:
     def __init__(self, agent_name):
         self.agent_name = agent_name
