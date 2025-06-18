@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import json
 
-def test_all_agents_directly(episodes=5):
+def test_all_agents_directly(episodes=100):
     """Test wszystkich agentów bezpośrednio przez import"""
     results = {}
     
@@ -193,7 +193,7 @@ def test_all_agents_directly(episodes=5):
     return results
 
 # Dodaj funkcję specjalnie dla PPO (zgodną z evaluate_ppo.py)
-def test_ppo_stable_baselines(episodes=50, render_mode=None):
+def test_ppo_stable_baselines(episodes=100, render_mode=None):
     """Test PPO używając Stable Baselines3 - dokładnie jak w evaluate_ppo.py"""
     print("🧪 Testowanie PPO z Stable Baselines3...")
     
@@ -435,7 +435,7 @@ def main():
     os.makedirs('results', exist_ok=True)
     
     # Testuj agentów
-    results = test_all_agents_directly(episodes=5)  # 30 epizodów każdy
+    results = test_all_agents_directly(episodes=100)  # 30 epizodów każdy
     
     # Analizuj wyniki
     print_summary(results)

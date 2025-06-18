@@ -6,7 +6,7 @@ from agents.dqn_agent import DQNAgent
 from agents.random_agent import RandomAgent
 from training.train_neat import train_neat, continue_from_checkpoint as continue_neat
 from training.train_dqn import train_dqn, continue_from_checkpoint as continue_dqn
-from evaluation.evaluate import evaluate
+from training.evaluate_ppo import evaluate
 from training.train_ppo import train_ppo
 import os
 import time
@@ -16,7 +16,7 @@ def main():
     # Parsowanie argumentów wiersza poleceń
     parser = argparse.ArgumentParser(description='Car Racing RL')
     parser.add_argument('--agent', type=str, default='neat', 
-                       choices=['neat', 'dqn', 'random', 'ppo', 'fuzzy', 'genetic', 'pso'],
+                       choices=['neat', 'dqn', 'random', 'ppo'],
                        help='Rodzaj agenta do trenowania/testowania')
     parser.add_argument('--mode', type=str, default='train', choices=['train', 'test'],
                         help='Tryb pracy: trenowanie lub testowanie')
@@ -48,12 +48,6 @@ def main():
         elif args.agent == 'ppo':
             env = CarRacingEnv(render_mode=render_mode, continuous=True)  # PPO używa ciągłych akcji
             train_ppo_agent(env, args)
-        elif args.agent == 'genetic':
-            env = CarRacingEnv(render_mode=render_mode, continuous=True)
-            train_genetic_agent(env, args)
-        elif args.agent == 'pso':
-            env = CarRacingEnv(render_mode=render_mode, continuous=True)
-            train_pso_agent(env, args)
         elif args.agent == 'random':
             print("Agent losowy nie wymaga treningu")
     elif args.mode == 'test':
@@ -66,15 +60,6 @@ def main():
         elif args.agent == 'ppo':
             env = CarRacingEnv(render_mode=render_mode, continuous=True)
             test_ppo_agent(env, args)
-        elif args.agent == 'fuzzy':
-            env = CarRacingEnv(render_mode=render_mode, continuous=True)
-            test_fuzzy_agent(env, args)
-        elif args.agent == 'genetic':
-            env = CarRacingEnv(render_mode=render_mode, continuous=True)
-            test_genetic_agent(env, args)
-        elif args.agent == 'pso':
-            env = CarRacingEnv(render_mode=render_mode, continuous=True)
-            test_pso_agent(env, args)
         elif args.agent == 'random':
             env = CarRacingEnv(render_mode=render_mode, continuous=True)
             test_random_agent(env, args)
@@ -464,117 +449,6 @@ def test_ppo_agent(env, args):
 
     env.close()
     print("\n✅ Ewaluacja zakończona!")
-def train_genetic_agent(env, args):
-    """Trenowanie agenta genetycznego"""
-    from agents.ga_agent import GeneticAgent
-    
-    agent = GeneticAgent(env, chromosome_length=600, population_size=30)
-    agent.train(num_generations=args.episodes)
-
-def train_pso_agent(env, args):
-    """Trenowanie agenta PSO"""
-    from agents.pso_agent import PSOAgent
-    
-    agent = PSOAgent(env, num_particles=20, dimensions=600)
-    agent.train(max_iterations=args.episodes)
-
-def test_fuzzy_agent(env, args):
-    """Testowanie agenta rozmytego"""
-    from agents.fuzzy_agent import FuzzyAgent
-    
-    agent = FuzzyAgent()
-    
-    total_rewards = []
-    for episode in range(args.episodes):
-        print(f"\n=== EPIZOD {episode+1}/{args.episodes} ===")
-        observation, info = env.reset()
-        episode_reward = 0
-        steps = 0
-        
-        for step in range(1000):
-            action = agent.act(observation)
-            observation, reward, terminated, truncated, info = env.step(action)
-            episode_reward += reward
-            steps += 1
-            
-            if terminated or truncated:
-                break
-        
-        total_rewards.append(episode_reward)
-        print(f"Epizod {episode+1}: {steps} kroków, {episode_reward:.2f} pkt")
-    
-    print(f"\n🧠 PODSUMOWANIE FUZZY:")
-    print(f"📊 Średnia nagroda: {np.mean(total_rewards):.2f}")
-
-def test_genetic_agent(env, args):
-    """Testowanie agenta genetycznego"""
-    from agents.ga_agent import GeneticAgent
-    
-    if args.model:
-        agent = GeneticAgent.load_best_genome(args.model, env)
-    else:
-        agent = GeneticAgent.load_best_genome('models/genetic_best_final.pkl', env)
-    
-    if agent is None:
-        print("❌ Nie można wczytać modelu genetycznego")
-        return
-    
-    total_rewards = []
-    for episode in range(args.episodes):
-        print(f"\n=== EPIZOD {episode+1}/{args.episodes} ===")
-        observation, info = env.reset()
-        episode_reward = 0
-        steps = 0
-        
-        for step in range(1000):
-            action = agent.act(observation, step)
-            observation, reward, terminated, truncated, info = env.step(action)
-            episode_reward += reward
-            steps += 1
-            
-            if terminated or truncated:
-                break
-        
-        total_rewards.append(episode_reward)
-        print(f"Epizod {episode+1}: {steps} kroków, {episode_reward:.2f} pkt")
-    
-    print(f"\n🧬 PODSUMOWANIE GENETIC:")
-    print(f"📊 Średnia nagroda: {np.mean(total_rewards):.2f}")
-
-def test_pso_agent(env, args):
-    """Testowanie agenta PSO"""
-    from agents.pso_agent import PSOAgent
-    
-    if args.model:
-        agent = PSOAgent.load_model(args.model, env)
-    else:
-        agent = PSOAgent.load_model('models/pso_best_final.pkl', env)
-    
-    if agent is None:
-        print("❌ Nie można wczytać modelu PSO")
-        return
-    
-    total_rewards = []
-    for episode in range(args.episodes):
-        print(f"\n=== EPIZOD {episode+1}/{args.episodes} ===")
-        observation, info = env.reset()
-        episode_reward = 0
-        steps = 0
-        
-        for step in range(1000):
-            action = agent.act(observation, step)
-            observation, reward, terminated, truncated, info = env.step(action)
-            episode_reward += reward
-            steps += 1
-            
-            if terminated or truncated:
-                break
-        
-        total_rewards.append(episode_reward)
-        print(f"Epizod {episode+1}: {steps} kroków, {episode_reward:.2f} pkt")
-    
-    print(f"\n🐝 PODSUMOWANIE PSO:")
-    print(f"📊 Średnia nagroda: {np.mean(total_rewards):.2f}")
 
 def test_random_agent(env, args):
     """Testowanie agenta losowego - baseline"""
